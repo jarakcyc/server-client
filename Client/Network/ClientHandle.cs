@@ -10,11 +10,11 @@ public class ClientHandle : MonoBehaviour
         int myId = packet.ReadInt();
 
         Debug.Log($"Message from the server: {message}");
-        Client.instance.myId = myId;
+        Client.myId = myId;
 
         ClientSend.WelcomeReceived();
 
-        Client.instance.udp.Connect(((IPEndPoint)Client.instance.tcp.socket.Client.LocalEndPoint).Port);
+        Client.udp.Connect(((IPEndPoint)Client.tcp.socket.Client.LocalEndPoint).Port);
     }
 
     public static void UDPTest(Packet packet) {
@@ -22,6 +22,12 @@ public class ClientHandle : MonoBehaviour
 
         Debug.Log($"Received packet via UDP. Message: {msg}");
         ClientSend.UDPTestReceived();
+    }
+
+    public static void PrepareSession(Packet packet) {
+        string msg = packet.ReadString();
+        Debug.Log(msg);
+        GameManager.instance.PrepareSession();
     }
 
     public static void SpawnPlayer(Packet packet) {
@@ -49,5 +55,25 @@ public class ClientHandle : MonoBehaviour
         Quaternion rotation = packet.ReadQuaternion();
 
         //GameManager.players[id].transform.rotation = rotation;
+    }
+
+    public static void Win(Packet packet) {
+        Debug.Log("Win");
+        PlayerController.Win();
+    }
+
+    public static void Lose(Packet packet) {
+        Debug.Log("Lose");
+        PlayerController.Lose();
+    }
+
+    public static void Respawn(Packet packet) {
+        Debug.Log("Respawn");
+        PlayerController.instance.GetComponent<HP>().SetHPToMax();
+    }
+
+    public static void PlayerShot(Packet packet) {
+        int playerId = packet.ReadInt();
+        GameManager.players[playerId].Shoot();
     }
 }

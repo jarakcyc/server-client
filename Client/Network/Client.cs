@@ -15,13 +15,13 @@ public class Client : MonoBehaviour
     public static Client instance;
     public static int kBufferSize = 4096;
 
-    public string ip = "192.168.0.105"; // server ip
-    public int port = 26950;
-    public int myId = 0;
-    public TCP tcp;
-    public UDP udp;
+    public static string ip = "192.168.0.106"; // server ip
+    public static int port = 26950;
+    public static int myId = 0;
+    public static TCP tcp = null;
+    public static UDP udp = null;
 
-    private bool isConnected = false;
+    private static bool isConnected = false;
     private delegate void PacketHandler(Packet packet);
     private static Dictionary<int, PacketHandler> packetHandlers;
 
@@ -35,16 +35,14 @@ public class Client : MonoBehaviour
         }
     }
 
-    private void Start() {
-        tcp = new TCP();
-        udp = new UDP();
-    }
-
     private void OnApplicationQuit() {
+        Debug.Log("OnApplicationQuit");
         Disconnect();
     }
 
     public void ConnectToServer() {
+        tcp = new TCP();
+        udp = new UDP();
         InitializeClientData();
         isConnected = true;
         tcp.Connect();
@@ -65,8 +63,8 @@ public class Client : MonoBehaviour
 
             receiveBuffer = new byte[kBufferSize];
 
-            Debug.Log($"Instance try to connect to server with ip: {instance.ip}");
-            socket.BeginConnect("192.168.0.105", instance.port, ConnectCallback, socket);
+            Debug.Log($"Instance try to connect to server with ip: {Client.ip}");
+            socket.BeginConnect(Client.ip, Client.port, ConnectCallback, socket);
         }
 
         private void ConnectCallback(IAsyncResult result) {
@@ -97,7 +95,7 @@ public class Client : MonoBehaviour
             try {
                 int bytes_cnt = stream.EndRead(result);
                 if (bytes_cnt <= 0) {
-                    instance.Disconnect();
+                    Client.Disconnect();
                     return;
                 }
 
@@ -153,7 +151,7 @@ public class Client : MonoBehaviour
         }
 
         private void Disconnect() {
-            instance.Disconnect();
+            Client.Disconnect();
 
             stream = null;
             receivedData = null;
@@ -167,7 +165,7 @@ public class Client : MonoBehaviour
         public IPEndPoint endPoint;
 
         public UDP() {
-            endPoint = new IPEndPoint(IPAddress.Parse(instance.ip), instance.port);
+            endPoint = new IPEndPoint(IPAddress.Parse(Client.ip), Client.port);
         }
 
         public void Connect(int localPort) {
@@ -183,7 +181,7 @@ public class Client : MonoBehaviour
 
         public void SendData(Packet packet) {
             try {
-                packet.InsertInt(instance.myId);
+                packet.InsertInt(Client.myId);
                 if (socket != null) {
                     socket.BeginSend(packet.ToArray(), packet.Length(), null, null);
                 }
@@ -198,7 +196,7 @@ public class Client : MonoBehaviour
                 socket.BeginReceive(ReceiveCallback, null);
 
                 if (data.Length < 4) {
-                    instance.Disconnect();
+                    Client.Disconnect();
                     return;
                 }
 
@@ -223,7 +221,7 @@ public class Client : MonoBehaviour
         }
 
         private void Disconnect() {
-            instance.Disconnect();
+            Client.Disconnect();
 
             endPoint = null;
             socket = null;
@@ -236,12 +234,17 @@ public class Client : MonoBehaviour
             { (int)ServerPackets.udpTest, ClientHandle.UDPTest },
             { (int)ServerPackets.spawnPlayer, ClientHandle.SpawnPlayer },
             { (int)ServerPackets.playerPosition, ClientHandle.PlayerPosition },
-            { (int)ServerPackets.playerRotation, ClientHandle.PlayerRotation }
+            { (int)ServerPackets.playerRotation, ClientHandle.PlayerRotation },
+            { (int)ServerPackets.prepareSession, ClientHandle.PrepareSession },
+            { (int)ServerPackets.win, ClientHandle.Win },
+            { (int)ServerPackets.lose, ClientHandle.Lose },
+            { (int)ServerPackets.respawn, ClientHandle.Respawn },
+            { (int)ServerPackets.playerShot, ClientHandle.PlayerShot }
         };
         Debug.Log("Initialized packets");
     }
 
-    private void Disconnect() {
+    public static void Disconnect() {
         if (isConnected) {
             isConnected = false;
             tcp.socket.Close();

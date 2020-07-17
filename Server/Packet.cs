@@ -10,6 +10,11 @@ namespace Server {
         spawnPlayer,
         playerPosition,
         playerRotation,
+        prepareSession,
+        win,
+        lose,
+        respawn,
+        playerShot,
         udpTest
     }
 
@@ -17,6 +22,10 @@ namespace Server {
     public enum ClientPackets {
         welcomeReceived = 1,
         playerMovement,
+        sessionPrepared,
+        finish,
+        die,
+        shoot,
         udpTestReceived
     }
 

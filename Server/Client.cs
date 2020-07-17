@@ -12,12 +12,14 @@ namespace Server {
         public static int kBufferSize = 4096;
 
         public int id;
+        public int sessionId;
         public Player player;
         public TCP tcp;
         public UDP udp;
 
         public Client(int _id) {
             id = _id;
+            sessionId = 0; // no session
             tcp = new TCP(_id);
             udp = new UDP(_id);
         }
@@ -54,7 +56,6 @@ namespace Server {
             public void SendData(Packet packet) {
                 try {
                     if (socket != null) {
-                        Console.WriteLine($"send {packet.Length()} data to client {id}");
                         stream.BeginWrite(packet.ToArray(), 0, packet.Length(), null, null);
                     }
                 } catch (Exception ex) {
@@ -164,25 +165,28 @@ namespace Server {
         }
 
         public void SendIntoGame(string playerName) {
-            player = new Player(id, playerName, new Vector3(0, 0, 0));
+            player = new Player(id, playerName, Constants.START_POSITION, sessionId);
 
-            foreach (Client client in Server.clients.Values) {
-                if (client.player != null) {
-                    if (client.id != id) {
-                        ServerSend.SpawnPlayer(id, client.player);
-                    }
+            foreach (int clientId in SessionManager.sessions[sessionId].clientIds) {
+                if (Server.clients[clientId].player != null) {
+                    ServerSend.SpawnPlayer(clientId, player);
                 }
             }
-
-            foreach (Client client in Server.clients.Values) {
-                if (client.player != null) {
-                    ServerSend.SpawnPlayer(client.id, player);
+            foreach (int clientId in SessionManager.sessions[sessionId].clientIds) {
+                if (clientId != id) {
+                    if (Server.clients[clientId].player != null) {
+                        ServerSend.SpawnPlayer(id, Server.clients[clientId].player);
+                    }
                 }
             }
         }
 
         private void Disconnect() {
             Console.WriteLine($"{tcp.socket.Client.RemoteEndPoint} has disconnected.");
+
+            if (sessionId != 0) {
+                SessionManager.sessions[sessionId].PlayerLeaveSession(id);
+            }
 
             player = null;
 

@@ -25,6 +25,7 @@ namespace Server {
             Console.WriteLine("Starting accept clients...");
 
             InitializeServerData();
+            SessionManager.Initialize();
 
             tcpListener = new TcpListener(IPAddress.Any, port);
             tcpListener.Start();
@@ -102,7 +103,11 @@ namespace Server {
             packetHandlers = new Dictionary<int, PacketHandler>() {
                 { (int)ClientPackets.welcomeReceived, ServerHandle.WelcomeReceived },
                 { (int)ClientPackets.udpTestReceived, ServerHandle.UDPTestReceived },
-                { (int)ClientPackets.playerMovement, ServerHandle.PlayerMovement }
+                { (int)ClientPackets.playerMovement, ServerHandle.PlayerMovement },
+                { (int)ClientPackets.sessionPrepared, ServerHandle.SessionPrepared },
+                { (int)ClientPackets.finish, ServerHandle.Finish },
+                { (int)ClientPackets.die, ServerHandle.Die },
+                { (int)ClientPackets.shoot, ServerHandle.Shoot }
             };
             Console.WriteLine("Initialized packets.");
         }

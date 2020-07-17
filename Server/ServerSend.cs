@@ -31,6 +31,22 @@ namespace Server {
             }
         }
 
+        private static void SendTCPDataToAllInSession(Packet packet, int sessionId) {
+            packet.WriteLength();
+            foreach (int i in SessionManager.sessions[sessionId].clientIds) {
+                Server.clients[i].tcp.SendData(packet);
+            }
+        }
+
+        private static void SendTCPDataToAllInSession(int exceptClient, Packet packet, int sessionId) {
+            packet.WriteLength();
+            foreach (int i in SessionManager.sessions[sessionId].clientIds) {
+                if (i != exceptClient) {
+                    Server.clients[i].tcp.SendData(packet);
+                }
+            }
+        }
+
         private static void SendUDPDataToAll(Packet packet) {
             packet.WriteLength();
             for (int i = 1; i <= Server.maxPlayers; ++i) {
@@ -41,6 +57,22 @@ namespace Server {
         private static void SendUDPDataToAll(int exceptClient, Packet packet) {
             packet.WriteLength();
             for (int i = 1; i <= Server.maxPlayers; ++i) {
+                if (i != exceptClient) {
+                    Server.clients[i].udp.SendData(packet);
+                }
+            }
+        }
+
+        private static void SendUDPDataToAllInSession(Packet packet, int sessionId) {
+            packet.WriteLength();
+            foreach (int i in SessionManager.sessions[sessionId].clientIds) {
+                Server.clients[i].udp.SendData(packet);
+            }
+        }
+
+        private static void SendUDPDataToAllInSession(int exceptClient, Packet packet, int sessionId) {
+            packet.WriteLength();
+            foreach (int i in SessionManager.sessions[sessionId].clientIds) {
                 if (i != exceptClient) {
                     Server.clients[i].udp.SendData(packet);
                 }
@@ -66,6 +98,13 @@ namespace Server {
             }
         }
 
+        public static void PrepareSession(int toClient) {
+            using (Packet packet = new Packet((int)ServerPackets.prepareSession)) {
+                packet.Write("Prepare session.");
+                SendTCPData(toClient, packet);
+            }
+        }
+
         public static void SpawnPlayer(int toClient, Player player) {
             using (Packet packet = new Packet((int)ServerPackets.spawnPlayer)) {
                 packet.Write(player.id);
@@ -82,7 +121,7 @@ namespace Server {
                 packet.Write(player.id);
                 packet.Write(player.position);
 
-                SendUDPDataToAll(packet);
+                SendUDPDataToAllInSession(packet, player.sessionId);
             }
         }
 
@@ -91,7 +130,39 @@ namespace Server {
                 packet.Write(player.id);
                 packet.Write(player.rotation);
 
-                SendUDPDataToAll(player.id, packet);
+                SendUDPDataToAllInSession(player.id, packet, player.sessionId);
+            }
+        }
+
+        public static void Win(int toClient) {
+            using (Packet packet = new Packet((int)ServerPackets.win)) {
+                packet.Write("You win!");
+
+                SendTCPData(toClient, packet);
+            }
+        }
+
+        public static void Lose(int toClient) {
+            using (Packet packet = new Packet((int)ServerPackets.lose)) {
+                packet.Write("You lose!");
+
+                SendTCPData(toClient, packet);
+            }
+        }
+
+        public static void Respawn(int toClient) {
+            using (Packet packet = new Packet((int)ServerPackets.respawn)) {
+                packet.Write("Respawn");
+
+                SendTCPData(toClient, packet);
+            }
+        }
+
+        public static void PlayerShot(Player player) {
+            using (Packet packet = new Packet((int)ServerPackets.playerShot)) {
+                packet.Write(player.id);
+
+                SendTCPDataToAllInSession(player.id, packet, player.sessionId);
             }
         }
 

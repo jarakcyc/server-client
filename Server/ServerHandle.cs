@@ -15,7 +15,28 @@ namespace Server {
             }
 
             // Send player into game
-            Server.clients[fromClient].SendIntoGame(username);
+            //Server.clients[fromClient].SendIntoGame(username);
+
+            SessionManager.NewWaiter(fromClient);
+            SessionManager.Update();
+        }
+
+        public static void SessionPrepared(int fromClient, Packet packet) {
+            Server.clients[fromClient].SendIntoGame($"{fromClient}");
+        }
+
+        public static void Finish(int fromClient, Packet packet) {
+            int sessionId = Server.clients[fromClient].sessionId;
+            SessionManager.sessions[sessionId].PlayerFinish(fromClient);
+        }
+
+        public static void Die(int fromClient, Packet packet) {
+            Server.clients[fromClient].player.position = Constants.START_POSITION;
+            ServerSend.Respawn(fromClient);
+        }
+
+        public static void Shoot(int fromClient, Packet packet) {
+            ServerSend.PlayerShot(Server.clients[fromClient].player);
         }
 
         public static void UDPTestReceived(int fromClient, Packet packet) {
